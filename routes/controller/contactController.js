@@ -2,7 +2,7 @@ import asyncHandler from "express-async-handler";
 import Contacts from "../../models/contactModel.js";
 
 export const getAllContact = asyncHandler(async (req, res) => {
-  const contacts = await Contacts.find();
+  const contacts = await Contacts.find({ user_id: req.user.id });
   if (contacts) {
     res.status(200).json(contacts);
   } else {
@@ -32,6 +32,7 @@ export const createContact = asyncHandler(async (req, res) => {
     const contact = await Contacts.create({
       name,
       phone,
+      user_id: req.user.id,
     });
     res.status(200).json(contact);
   }
@@ -41,20 +42,23 @@ export const updateContact = asyncHandler(async (req, res) => {
   const contact = await Contacts.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
   });
-  if (contact) {
-    res.status(200).json(contact);
-  } else {
-    res.status(404);
-    throw new Error("contact not found");
+  if (contact.user_id.toString() !== req.user.id) {
+    res.status(403);
+    throw new Error("unauthorized");
   }
+  res.status(200).json(contact);
 });
 
 export const deleteContact = asyncHandler(async (req, res) => {
-  const contact = await Contacts.deleteOne({ _id: req.params.id });
-  if (contact) {
-    res.status(200).json(contact);
-  } else {
+  const contact = await Contacts.findById(req.params.id);
+  if (!contact) {
     res.status(404);
     throw new Error("contact not found");
   }
+  if (contact.user_id.toString() !== req.user.id) {
+    res.status(403);
+    throw new Error("unauthorized");
+  }
+  await Contacts.deleteOne({ _id: req.params.id });
+  res.status(200).json({ message: "deleted" });
 });
