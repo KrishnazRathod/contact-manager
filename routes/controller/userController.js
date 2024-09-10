@@ -10,6 +10,7 @@ export const userRegister = asyncHandler(async (req, res) => {
     throw new Error("all fields are mandetory");
   } else {
     const userAvailable = await User.findOne({ email });
+    // const userAvailable = await User.findOne({ email });
     if (userAvailable) {
       res.status(404);
       throw new Error("user already registered");
